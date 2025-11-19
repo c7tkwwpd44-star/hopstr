@@ -10,6 +10,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { genUserName } from '@/lib/genUserName';
 import type { NostrEvent, NostrMetadata } from '@nostrify/nostrify';
 import { LoginArea } from '@/components/auth/LoginArea';
+import { SeedDataDialog } from '@/components/SeedDataDialog';
 
 function BeerCheckinCard({ event }: { event: NostrEvent }) {
   const data = getBeerCheckinData(event);
@@ -18,7 +19,7 @@ function BeerCheckinCard({ event }: { event: NostrEvent }) {
 
   const displayName = metadata?.name || genUserName(event.pubkey);
   const profileImage = metadata?.picture;
-  
+
   const timeAgo = (timestamp: number) => {
     const seconds = Math.floor(Date.now() / 1000 - timestamp);
     if (seconds < 60) return 'just now';
@@ -164,7 +165,7 @@ export default function Home() {
                 Hopstr
               </span>
             </Link>
-            
+
             <div className="flex items-center gap-3">
               {user && (
                 <Link to="/profile">
@@ -243,14 +244,19 @@ export default function Home() {
                     <p className="text-muted-foreground">
                       No check-ins found yet. Be the first to check in a beer!
                     </p>
-                    {user && (
-                      <Link to="/checkin">
-                        <Button className="rounded-full">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Check In Now
-                        </Button>
-                      </Link>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                      {user && (
+                        <>
+                          <Link to="/checkin">
+                            <Button className="rounded-full">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Check In Now
+                            </Button>
+                          </Link>
+                          <SeedDataDialog />
+                        </>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

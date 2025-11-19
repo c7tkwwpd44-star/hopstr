@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBeerCheckins, getBeerCheckinData } from '@/hooks/useBeerCheckins';
+import { SeedDataDialog } from '@/components/SeedDataDialog';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface BeerStats {
   name: string;
@@ -24,6 +26,7 @@ interface BreweryStats {
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useCurrentUser();
   const { data: checkins, isLoading } = useBeerCheckins({ limit: 200 });
 
   // Calculate top beers
@@ -34,7 +37,7 @@ export default function Explore() {
     const data = getBeerCheckinData(event);
     const key = `${data.beerName}|${data.breweryName}`;
     const existing = beerMap.get(key);
-    
+
     if (existing) {
       existing.count++;
       if (data.rating) existing.ratings.push(data.rating);
@@ -53,7 +56,7 @@ export default function Explore() {
     const avgRating = stats.ratings.length > 0
       ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
       : 0;
-    
+
     topBeers.push({
       name,
       brewery: stats.brewery,
@@ -72,7 +75,7 @@ export default function Explore() {
   checkins?.forEach((event) => {
     const data = getBeerCheckinData(event);
     const existing = breweryMap.get(data.breweryName);
-    
+
     if (existing) {
       existing.count++;
       if (data.rating) existing.ratings.push(data.rating);
@@ -88,7 +91,7 @@ export default function Explore() {
     const avgRating = stats.ratings.length > 0
       ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
       : 0;
-    
+
     topBreweries.push({
       name,
       count: stats.count,
@@ -126,15 +129,22 @@ export default function Explore() {
 
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search beers or breweries..."
-              className="pl-10 h-12"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          {/* Search and Actions */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search beers or breweries..."
+                className="pl-10 h-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {user && (
+              <div className="flex items-center">
+                <SeedDataDialog />
+              </div>
+            )}
           </div>
 
           {/* Tabs */}
