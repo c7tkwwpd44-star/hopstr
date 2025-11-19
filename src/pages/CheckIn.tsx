@@ -18,6 +18,8 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useUploadFile } from '@/hooks/useUploadFile';
 import { useToast } from '@/hooks/useToast';
 import { LoginArea } from '@/components/auth/LoginArea';
+import { BreweryCombobox } from '@/components/BreweryCombobox';
+import { BeerCombobox } from '@/components/BeerCombobox';
 
 const BEER_STYLES = [
   'IPA',
@@ -147,7 +149,7 @@ export default function CheckIn() {
       if (formData.ibu) tags.push(['ibu', formData.ibu]);
       if (formData.servingStyle) tags.push(['serving-style', formData.servingStyle]);
       if (formData.location) tags.push(['location', formData.location]);
-      
+
       if (imageUrl) {
         tags.push(['image', imageUrl]);
         if (imageMetaTags.length > 0) {
@@ -293,33 +295,40 @@ export default function CheckIn() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="beerName">
-                    Beer Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="beerName"
-                    placeholder="e.g., Pliny the Elder"
-                    value={formData.beerName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, beerName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="breweryName">
                     Brewery <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="breweryName"
-                    placeholder="e.g., Russian River Brewing"
+                  <BreweryCombobox
                     value={formData.breweryName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, breweryName: e.target.value })
+                    onChange={(value) =>
+                      setFormData({ ...formData, breweryName: value })
                     }
-                    required
+                    placeholder="Search or type brewery name..."
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Start typing to search breweries or add a new one
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="beerName">
+                    Beer Name <span className="text-destructive">*</span>
+                  </Label>
+                  <BeerCombobox
+                    value={formData.beerName}
+                    onChange={(value, style) => {
+                      setFormData({
+                        ...formData,
+                        beerName: value,
+                        beerStyle: style || formData.beerStyle,
+                      });
+                    }}
+                    breweryFilter={formData.breweryName}
+                    placeholder="Search or type beer name..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Previously checked-in beers will appear as suggestions
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
