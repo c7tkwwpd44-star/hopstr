@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useBeerCheckins, getBeerCheckinData } from '@/hooks/useBeerCheckins';
 import { SeedDataDialog } from '@/components/SeedDataDialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { SEED_BEERS } from '@/lib/seedData';
 
 interface BeerStats {
   name: string;
@@ -30,77 +32,123 @@ export default function Explore() {
   const { user } = useCurrentUser();
   const { data: checkins, isLoading } = useBeerCheckins({ limit: 200 });
 
-  // Calculate top beers
+  // Determine if we should use fallback data
+  const hasRealData = !isLoading && checkins && checkins.length > 0;
+  const useFallback = !isLoading && (!checkins || checkins.length === 0);
+
+  // Calculate top beers from real Nostr events
   const topBeers: BeerStats[] = [];
   const beerMap = new Map<string, { count: number; ratings: number[]; brewery: string; style?: string }>();
 
-  checkins?.forEach((event) => {
-    const data = getBeerCheckinData(event);
-    const key = `${data.beerName}|${data.breweryName}`;
-    const existing = beerMap.get(key);
+  if (hasRealData) {
+    checkins.forEach((event) => {
+      const data = getBeerCheckinData(event);
+      const key = `${data.beerName}|${data.breweryName}`;
+      const existing = beerMap.get(key);
 
-    if (existing) {
-      existing.count++;
-      if (data.rating) existing.ratings.push(data.rating);
-    } else {
-      beerMap.set(key, {
-        count: 1,
-        ratings: data.rating ? [data.rating] : [],
-        brewery: data.breweryName,
-        style: data.beerStyle,
-      });
-    }
-  });
-
-  beerMap.forEach((stats, key) => {
-    const [name] = key.split('|');
-    const avgRating = stats.ratings.length > 0
-      ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
-      : 0;
-
-    topBeers.push({
-      name,
-      brewery: stats.brewery,
-      count: stats.count,
-      avgRating,
-      style: stats.style,
+      if (existing) {
+        existing.count++;
+        if (data.rating) existing.ratings.push(data.rating);
+      } else {
+        beerMap.set(key, {
+          count: 1,
+          ratings: data.rating ? [data.rating] : [],
+          brewery: data.breweryName,
+          style: data.beerStyle,
+        });
+      }
     });
-  });
 
-  topBeers.sort((a, b) => b.count - a.count);
+    beerMap.forEach((stats, key) => {
+      const [name] = key.split('|');
+      const avgRating = stats.ratings.length > 0
+        ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
+        : 0;
+
+      topBeers.push({
+        name,
+        brewery: stats.brewery,
+        count: stats.count,
+        avgRating,
+        style: stats.style,
+      });
+    });
+
+    topBeers.sort((a, b) => b.count - a.count);
+  } else if (useFallback) {
+    // Use seed data as fallback when no real events exist
+    SEED_BEERS.forEach((beer) => {
+      topBeers.push({
+        name: beer.beerName,
+        brewery: beer.breweryName,
+        count: 1,
+        avgRating: parseFloat(beer.rating),
+        style: beer.beerStyle,
+      });
+    });
+  }
 
   // Calculate top breweries
   const topBreweries: BreweryStats[] = [];
   const breweryMap = new Map<string, { count: number; ratings: number[] }>();
 
-  checkins?.forEach((event) => {
-    const data = getBeerCheckinData(event);
-    const existing = breweryMap.get(data.breweryName);
+  if (hasRealData) {
+    checkins.forEach((event) => {
+      const data = getBeerCheckinData(event);
+      const existing = breweryMap.get(data.breweryName);
 
-    if (existing) {
-      existing.count++;
-      if (data.rating) existing.ratings.push(data.rating);
-    } else {
-      breweryMap.set(data.breweryName, {
-        count: 1,
-        ratings: data.rating ? [data.rating] : [],
-      });
-    }
-  });
-
-  breweryMap.forEach((stats, name) => {
-    const avgRating = stats.ratings.length > 0
-      ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
-      : 0;
-
-    topBreweries.push({
-      name,
-      count: stats.count,
-      avgRating,
+      if (existing) {
+        existing.count++;
+        if (data.rating) existing.ratings.push(data.rating);
+      } else {
+        breweryMap.set(data.breweryName, {
+          count: 1,
+          ratings: data.rating ? [data.rating] : [],
+        });
+      }
     });
-  });
 
-  topBreweries.sort((a, b) => b.count - a.count);
+    breweryMap.forEach((stats, name) => {
+      const avgRating = stats.ratings.length > 0
+        ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
+        : 0;
+
+      topBreweries.push({
+        name,
+        count: stats.count,
+        avgRating,
+      });
+    });
+
+    topBreweries.sort((a, b) => b.count - a.count);
+  } else if (useFallback) {
+    // Calculate breweries from seed data
+    const breweryCountMap = new Map<string, { count: number; ratings: number[] }>();
+
+    SEED_BEERS.forEach((beer) => {
+      const existing = breweryCountMap.get(beer.breweryName);
+      if (existing) {
+        existing.count++;
+        existing.ratings.push(parseFloat(beer.rating));
+      } else {
+        breweryCountMap.set(beer.breweryName, {
+          count: 1,
+          ratings: [parseFloat(beer.rating)],
+        });
+      }
+    });
+
+    breweryCountMap.forEach((stats, name) => {
+      const avgRating = stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length;
+      topBreweries.push({
+        name,
+        count: stats.count,
+        avgRating,
+      });
+    });
+
+    topBreweries.sort((a, b) => b.count - a.count);
+  }
 
   // Filter by search (only if search query is not empty)
   const filteredBeers = searchQuery
@@ -142,15 +190,15 @@ export default function Explore() {
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Getting Started Info */}
-          {!isLoading && (!checkins || checkins.length === 0) && (
+          {useFallback && (
             <Alert className="border-primary/50 bg-primary/5">
               <Sparkles className="h-4 w-4 text-primary" />
               <AlertDescription className="ml-2">
-                <strong>Welcome to Hopstr!</strong> This page shows beers from all check-ins across the Nostr network.
+                <strong>Browsing Sample Beers</strong> - You're viewing {SEED_BEERS.length} popular beers as examples.
                 {user ? (
-                  <> To get started, click <strong>"Seed Sample Data"</strong> below to add 25 popular beers, or <Link to="/checkin" className="underline font-medium">check in your first beer</Link>!</>
+                  <> To publish these to the Nostr network, click <strong>"Seed Sample Data"</strong> below, or <Link to="/checkin" className="underline font-medium">check in your first beer</Link>!</>
                 ) : (
-                  <> <Link to="/" className="underline font-medium">Log in</Link> to add sample data or check in beers.</>
+                  <> <Link to="/" className="underline font-medium">Log in</Link> to publish these beers or check in your own.</>
                 )}
               </AlertDescription>
             </Alert>
@@ -215,15 +263,8 @@ export default function Explore() {
                         <Beer className="h-12 w-12 text-muted-foreground" />
                       </div>
                       <p className="text-muted-foreground">
-                        {searchQuery
-                          ? 'No beers found matching your search. Try a different search term or clear the search.'
-                          : 'No beers found yet. Add some sample data to get started!'}
+                        No beers found matching your search. Try a different search term.
                       </p>
-                      {!searchQuery && user && (
-                        <div className="flex justify-center">
-                          <SeedDataDialog />
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -236,17 +277,24 @@ export default function Explore() {
                           <span className="font-bold text-primary">#{index + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-lg truncate">{beer.name}</h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-lg truncate">{beer.name}</h3>
+                            {useFallback && (
+                              <Badge variant="secondary" className="text-xs shrink-0">Sample</Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground truncate">{beer.brewery}</p>
                           {beer.style && (
                             <p className="text-xs text-muted-foreground">{beer.style}</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="flex items-center gap-1 text-primary font-bold">
-                            <Beer className="h-4 w-4" />
-                            <span>{beer.count}</span>
-                          </div>
+                          {!useFallback && (
+                            <div className="flex items-center gap-1 text-primary font-bold">
+                              <Beer className="h-4 w-4" />
+                              <span>{beer.count}</span>
+                            </div>
+                          )}
                           {beer.avgRating > 0 && (
                             <div className="text-sm text-muted-foreground">
                               {beer.avgRating.toFixed(1)} ★
@@ -283,15 +331,8 @@ export default function Explore() {
                         <Beer className="h-12 w-12 text-muted-foreground" />
                       </div>
                       <p className="text-muted-foreground">
-                        {searchQuery
-                          ? 'No breweries found matching your search. Try a different search term or clear the search.'
-                          : 'No breweries found yet. Add some sample data to get started!'}
+                        No breweries found matching your search. Try a different search term.
                       </p>
-                      {!searchQuery && user && (
-                        <div className="flex justify-center">
-                          <SeedDataDialog />
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -304,13 +345,20 @@ export default function Explore() {
                           <span className="font-bold text-primary">#{index + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-lg truncate">{brewery.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-lg truncate">{brewery.name}</h3>
+                            {useFallback && (
+                              <Badge variant="secondary" className="text-xs shrink-0">Sample</Badge>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="flex items-center gap-1 text-primary font-bold">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>{brewery.count}</span>
-                          </div>
+                          {!useFallback && (
+                            <div className="flex items-center gap-1 text-primary font-bold">
+                              <TrendingUp className="h-4 w-4" />
+                              <span>{brewery.count}</span>
+                            </div>
+                          )}
                           {brewery.avgRating > 0 && (
                             <div className="text-sm text-muted-foreground">
                               {brewery.avgRating.toFixed(1)} ★
