@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Beer, Search, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Beer, Search, TrendingUp, Info, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useBeerCheckins, getBeerCheckinData } from '@/hooks/useBeerCheckins';
 import { SeedDataDialog } from '@/components/SeedDataDialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -120,19 +121,41 @@ export default function Explore() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold">Explore</h1>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold">Explore</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  Discover popular beers and breweries from the Nostr network
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
+          {/* Getting Started Info */}
+          {!isLoading && (!checkins || checkins.length === 0) && (
+            <Alert className="border-primary/50 bg-primary/5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <AlertDescription className="ml-2">
+                <strong>Welcome to Hopstr!</strong> This page shows beers from all check-ins across the Nostr network.
+                {user ? (
+                  <> To get started, click <strong>"Seed Sample Data"</strong> below to add 25 popular beers, or <Link to="/checkin" className="underline font-medium">check in your first beer</Link>!</>
+                ) : (
+                  <> <Link to="/" className="underline font-medium">Log in</Link> to add sample data or check in beers.</>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Search and Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
