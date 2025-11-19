@@ -5,6 +5,7 @@ import './lib/polyfills.ts';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import App from './App.tsx';
+import '@fontsource-variable/outfit';
 import './index.css';
 
 // FIXME: a custom font should be used. Eg:
