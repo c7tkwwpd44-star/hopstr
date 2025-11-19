@@ -15,10 +15,6 @@ export function useBeerSuggestions(query: string, breweryFilter?: string) {
   return useQuery({
     queryKey: ['beer-suggestions', query, breweryFilter],
     queryFn: async (c) => {
-      if (!query || query.length < 2) {
-        return [];
-      }
-
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(2000)]);
 
       try {
@@ -38,15 +34,17 @@ export function useBeerSuggestions(query: string, breweryFilter?: string) {
 
         events.forEach((event) => {
           const data = getBeerCheckinData(event);
-          
+
           // Apply brewery filter if specified
           if (breweryFilter && data.breweryName.toLowerCase() !== breweryFilter.toLowerCase()) {
             return;
           }
 
-          // Check if beer name matches query
-          if (!data.beerName.toLowerCase().includes(query.toLowerCase())) {
-            return;
+          // Check if beer name matches query (only if query is provided and has 2+ chars)
+          if (query && query.length >= 2) {
+            if (!data.beerName.toLowerCase().includes(query.toLowerCase())) {
+              return;
+            }
           }
 
           const key = `${data.beerName}|${data.breweryName}`;
@@ -73,7 +71,6 @@ export function useBeerSuggestions(query: string, breweryFilter?: string) {
         return [];
       }
     },
-    enabled: query.length >= 2,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 }

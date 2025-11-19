@@ -78,7 +78,7 @@ export function BeerCombobox({
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             ) : suggestions && suggestions.length > 0 ? (
-              <CommandGroup heading="Previously checked-in beers">
+              <CommandGroup heading={searchQuery.length >= 2 ? "Matching beers" : "Popular beers"}>
                 {suggestions.map((suggestion, index) => (
                   <CommandItem
                     key={`${suggestion.beerName}-${suggestion.breweryName}-${index}`}

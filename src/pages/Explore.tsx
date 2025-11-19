@@ -101,16 +101,20 @@ export default function Explore() {
 
   topBreweries.sort((a, b) => b.count - a.count);
 
-  // Filter by search
-  const filteredBeers = topBeers.filter(
-    (beer) =>
-      beer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      beer.brewery.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter by search (only if search query is not empty)
+  const filteredBeers = searchQuery
+    ? topBeers.filter(
+        (beer) =>
+          beer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          beer.brewery.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : topBeers;
 
-  const filteredBreweries = topBreweries.filter((brewery) =>
-    brewery.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBreweries = searchQuery
+    ? topBreweries.filter((brewery) =>
+        brewery.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : topBreweries;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -183,9 +187,21 @@ export default function Explore() {
               ) : filteredBeers.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">
-                      {searchQuery ? 'No beers found matching your search' : 'No beers found'}
-                    </p>
+                    <div className="max-w-sm mx-auto space-y-4">
+                      <div className="bg-muted/50 rounded-full p-6 w-fit mx-auto">
+                        <Beer className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        {searchQuery
+                          ? 'No beers found matching your search. Try a different search term or clear the search.'
+                          : 'No beers found yet. Add some sample data to get started!'}
+                      </p>
+                      {!searchQuery && user && (
+                        <div className="flex justify-center">
+                          <SeedDataDialog />
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
@@ -239,9 +255,21 @@ export default function Explore() {
               ) : filteredBreweries.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">
-                      {searchQuery ? 'No breweries found matching your search' : 'No breweries found'}
-                    </p>
+                    <div className="max-w-sm mx-auto space-y-4">
+                      <div className="bg-muted/50 rounded-full p-6 w-fit mx-auto">
+                        <Beer className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        {searchQuery
+                          ? 'No breweries found matching your search. Try a different search term or clear the search.'
+                          : 'No breweries found yet. Add some sample data to get started!'}
+                      </p>
+                      {!searchQuery && user && (
+                        <div className="flex justify-center">
+                          <SeedDataDialog />
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
